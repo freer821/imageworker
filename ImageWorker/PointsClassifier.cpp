@@ -169,7 +169,7 @@ vector<vector<Point>> PointsClassifier::getPointsGroups()
 
 void PointsClassifier::writePointsJsonInFile(const string & filename)
 {
-	cout << "Beginning to write Point Json.........." << endl;
+	cout << "Beginning to write Point Json into "<< filename << endl;
 
 	ostringstream ss;
 	ss << "{ \"groups\":[";
