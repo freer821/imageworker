@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-
+#include <thread>
 
 namespace
 {
 	string PointToString(const Point &p)
 	{
 		ostringstream ss;
-		ss << setfill('0') << setw(4) << p.x <<setfill('0') << setw(4) << p.y;
+		ss << setfill('0') << setw(4) << p.x << setfill('0') << setw(4) << p.y;
 
 		return ss.str();
 
@@ -27,14 +27,24 @@ namespace
 
 		return true;
 	}
+
+	string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+		}
+		return str;
+	}
+
 }
-PointsClassifier::PointsClassifier(const Mat & img): _img(img), _imgH(img.size().height),_imgW(img.size().width)
+PointsClassifier::PointsClassifier(const Mat & img) : _img(img), _imgH(img.size().height), _imgW(img.size().width)
 {
-	_cal_img_space = Mat(_imgH+2, _imgW+2, CV_8UC1, Scalar(0));
+	_cal_img_space = Mat(_imgH + 2, _imgW + 2, CV_8UC1, Scalar(0));
 	for (int y = 0; y < _imgH; y++) {
 		for (int x = 0; x < _imgW; x++) {
 			if (_img.at<uchar>(y, x) == 255) {
-				_cal_img_space.at<uchar>(y+1, x+1) = 1;
+				_cal_img_space.at<uchar>(y + 1, x + 1) = 1;
 				Point tmp_p = Point(x, y);
 				allPoints.insert({ PointToString(tmp_p),tmp_p });
 			}
@@ -61,7 +71,7 @@ void PointsClassifier::setCalNeighborsOfPoint(Point p, Point* points)
 	points[2].y = y - 1;
 
 	points[3].x = x - 1;
-	points[3].y = y ;
+	points[3].y = y;
 	points[4].x = x + 1;
 	points[4].y = y;
 
@@ -81,7 +91,7 @@ vector<Point>  PointsClassifier::findRailwayNeighborsOfPoint(const Point& center
 
 	// cal center point
 	allPoints.erase(p_key);
-	_cal_img_space.at<uchar>(center_p.y+1, center_p.x+1) = 0;
+	_cal_img_space.at<uchar>(center_p.y + 1, center_p.x + 1) = 0;
 
 	// cal Neighbor points
 	vector<Point> new_neighbors;
@@ -107,12 +117,11 @@ vector<Point>  PointsClassifier::findRailwayNeighborsOfPoint(const Point& center
 
 }
 
-
 vector<Point> PointsClassifier::findOneGroupPoints(Point start_p)
 {
 
-	cout << " begin to find one realway at point: x " << start_p.x<<", y "<<start_p.y << endl;
-	 
+	cout << " begin to find one realway at point: x " << start_p.x << ", y " << start_p.y << endl;
+
 	vector<Point> grouppedPoints;
 
 	vector<Point> neighbors{ start_p };
@@ -120,6 +129,7 @@ vector<Point> PointsClassifier::findOneGroupPoints(Point start_p)
 
 	while (neighbors.size() > 0) {
 		vector<Point> new_neighbors;
+		thread *t = new thread[neighbors.size()];
 		for (auto & point : neighbors) {
 			vector<Point> results = findRailwayNeighborsOfPoint(point);
 			new_neighbors.insert(new_neighbors.end(), results.begin(), results.end());
@@ -169,16 +179,18 @@ void PointsClassifier::writePointsJsonInFile(const string & filename)
 			ss << "{ \"group\":[";
 			for (auto const& point : groupPoints)
 			{
-				ss << "{ \"x\":"<< point.x<<",\"y\":"<< point.y<<"},";
+				ss << "{ \"x\":" << point.x << ",\"y\":" << point.y << "},";
 			}
 			ss << "]},";
 		}
 	}
 
 	ss << "]}";
+
+	string jsonstring = ReplaceAll(ss.str(), ",]", "]");
 	ofstream myfile;
 	myfile.open(filename);
-	myfile << ss.str();
+	myfile << jsonstring;
 	myfile.close();
 
 	cout << "Points Json are already wrritten to file!" << endl;

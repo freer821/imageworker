@@ -17,7 +17,6 @@ private:
 	void setCalNeighborsOfPoint(Point p, Point* points);
 	vector<Point>  findRailwayNeighborsOfPoint(const Point& center_p);
 	vector<Point>  findOneGroupPoints(Point start_p);
-
 public:
 	PointsClassifier(const Mat & img);
 	~PointsClassifier();
